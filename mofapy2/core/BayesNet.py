@@ -17,6 +17,7 @@ import numpy as np
 from mofapy2.core.nodes.variational_nodes import Variational_Node
 from mofapy2.core.nodes.multiview_nodes import Multiview_Variational_Node
 from mofapy2.core import gpu_utils
+from mofapy2.core import fast_updates
 from .utils import corr, nans, infer_platform
 
 import warnings
@@ -133,6 +134,11 @@ class BayesNet(object):
         return self.nodes
 
     def calculate_variance_explained(self, total=False):
+        # optiMOFA: closed form from Gram matrices (one group, no missing values)
+        fast = fast_updates.variance_explained(self, total)
+        if fast is not None:
+            return fast
+
         # Collect relevant expectations
         Z = self.nodes["Z"].getExpectation()
         W = self.nodes["W"].getExpectation()
@@ -220,6 +226,9 @@ class BayesNet(object):
         pass
 
     def precompute(self):
+        # optiMOFA: forget device copies of data from a previous fit
+        gpu_utils.clear_resident()
+
         # Precompute terms
         for n in self.nodes:
             self.nodes[n].precompute(self.options)

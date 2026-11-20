@@ -5,6 +5,7 @@ import scipy as s
 import math
 from mofapy2.core.utils import *
 from mofapy2.core import gpu_utils
+from mofapy2.core import fast_updates
 from time import time
 
 
@@ -53,6 +54,12 @@ class Z_Node(UnivariateGaussian_Unobserved_Variational_Node):
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
+
+        # optiMOFA: exact Gram-matrix form when, in every view, tau is the same for all
+        # samples of a feature
+        ynodes, taunodes = self.markov_blanket["Y"].nodes, self.markov_blanket["Tau"].nodes
+        if all(fast_updates.applies(y, t, ix) for y, t in zip(ynodes, taunodes)):
+            return fast_updates.z_update(self, ro)
 
         # Get expectations from other nodes
         W = self.markov_blanket["W"].getExpectations()

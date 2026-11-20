@@ -6,6 +6,7 @@ import scipy.special as special
 
 from mofapy2.core.utils import *
 from mofapy2.core import gpu_utils
+from mofapy2.core import fast_updates
 
 # Import manually defined functions
 from .variational_nodes import Gamma_Unobserved_Variational_Node
@@ -74,6 +75,10 @@ class TauD_Node(Gamma_Unobserved_Variational_Node):
             - ix: list of indices of the minibatch
             - ro: step size of the natural gradient ascent
         """
+
+        # optiMOFA: closed form without N x D temporaries (one group, no missing values)
+        if fast_updates.applies(self.markov_blanket["Y"], self, ix):
+            return fast_updates.tau_update(self, ro)
 
         # Get expectations from other nodes
         Y = self.markov_blanket["Y"].get_mini_batch()

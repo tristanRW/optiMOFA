@@ -94,8 +94,32 @@ def zeros(dim):
 # --------------------------------------------------------
 # loading on and from the GPU
 # --------------------------------------------------------
+# optiMOFA: data matrices registered here are uploaded once per fit and the device copy is
+# reused (stock re-uploads Y in every W, Z and Tau update). Keyed by id(); the entry is
+# dropped when the host array is garbage collected, and cleared at the start of every fit.
+_resident = {}
+
+
+def register_resident(mat):
+    import weakref
+
+    key = id(mat)
+    _resident[key] = (weakref.ref(mat), None)
+    weakref.finalize(mat, _resident.pop, key, None)
+
+
+def clear_resident():
+    _resident.clear()
+
+
 def array(mat):
     if gpu_mode:
+        hit = _resident.get(id(mat))
+        if hit is not None and hit[0]() is mat:
+            if hit[1] is None:
+                hit = (hit[0], cp.array(mat))
+                _resident[id(mat)] = hit
+            return hit[1]
         return cp.array(mat)
     else:
         return mat

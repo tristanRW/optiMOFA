@@ -6,6 +6,7 @@ import math
 
 from mofapy2.core.utils import *
 from mofapy2.core import gpu_utils
+from mofapy2.core import fast_updates
 
 from time import time
 
@@ -173,6 +174,10 @@ class SW_Node(BernoulliGaussian_Unobserved_Variational_Node):
         super().removeFactors(idx, axis=1)
 
     def updateParameters(self, ix=None, ro=1.0):
+        # optiMOFA: exact Gram-matrix form when tau is the same for all samples of a feature
+        if fast_updates.applies(self.markov_blanket["Y"], self.markov_blanket["Tau"], ix):
+            return fast_updates.sw_update(self, ro)
+
         # Collect expectations from other nodes
         Y = self.markov_blanket["Y"].get_mini_batch()
         Z = self.markov_blanket["Z"].get_mini_batch()

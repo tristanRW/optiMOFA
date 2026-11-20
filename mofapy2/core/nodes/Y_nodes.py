@@ -6,6 +6,7 @@ import math
 
 from mofapy2.core.utils import dotd
 from mofapy2.core import gpu_utils
+from mofapy2.core import fast_updates
 
 # Import manually defined functions
 from .variational_nodes import Constant_Variational_Node
@@ -35,6 +36,12 @@ class Y_Node(Constant_Variational_Node):
 
         # GPU mode
         gpu_utils.gpu_mode = options["gpu_mode"]
+
+        # optiMOFA: exact fast updates (see mofapy2/core/fast_updates.py)
+        fast_updates.enabled = bool(options.get("fast_updates", True))
+        fast_updates.reset(self)
+        if gpu_utils.gpu_mode:
+            gpu_utils.register_resident(self.getExpectation())
 
         # Do TauTrick to speed up ELBO computation?
         # Important: this assumes that the Tau update has been done prior to calculating elbo of Y
@@ -79,6 +86,9 @@ class Y_Node(Constant_Variational_Node):
         groups = self.markov_blanket["Tau"].groups
 
         if self.TauTrick:
+            fast = fast_updates.y_elbo(self)
+            if fast is not None:
+                return fast
             tauQ_param = self.markov_blanket["Tau"].getParameters("Q")
             tauP_param = self.markov_blanket["Tau"].getParameters("P")
             for g in range(len(np.unique(groups))):

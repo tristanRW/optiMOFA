@@ -877,8 +877,14 @@ class entry_point(object):
         weight_views=False,
         outfile=None,
         save_interrupted=False,
+        fast_updates=True,
     ):
-        """Set training options"""
+        """Set training options
+
+        fast_updates (optiMOFA): use the exact closed-form updates of
+        mofapy2/core/fast_updates.py wherever they apply (one group, no missing values);
+        False runs the stock mofapy2 updates everywhere.
+        """
 
         # Sanity checks
         assert hasattr(
@@ -929,6 +935,7 @@ class entry_point(object):
                 sys.stdout.flush()
                 gpu_mode = False
         self.train_opts["gpu_mode"] = gpu_mode
+        self.train_opts["fast_updates"] = bool(fast_updates)
 
         # Minimum Variance explained threshold to drop inactive factors
         if dropR2 is False:
@@ -1788,6 +1795,7 @@ def mofa(
     convergence_mode: str = "fast",
     gpu_mode: bool = False,
     gpu_device: Optional[bool] = None,
+    fast_updates: bool = True,
     use_float32: bool = False,
     save_parameters: bool = False,
     save_data: bool = True,
@@ -1823,6 +1831,7 @@ def mofa(
     convergence_mode (optional): fast, medium, or slow convergence mode
     gpu_mode (optional): if to use GPU mode
     gpu_mode (optional): which GPU to use
+    fast_updates (optional): optiMOFA exact fast updates (default True; False = stock updates)
     use_float32 (optional): if to use float32 precision
     save_parameters (optional): if to save training parameters
     save_data (optional): if to save training data
@@ -1867,6 +1876,7 @@ def mofa(
         convergence_mode=convergence_mode,
         gpu_mode=gpu_mode,
         gpu_device=gpu_device,
+        fast_updates=fast_updates,
         seed=seed,
         verbose=verbose,
         quiet=quiet,
