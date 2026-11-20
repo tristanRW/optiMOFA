@@ -263,6 +263,11 @@ def test_data_stays_resident_on_gpu():
     finally:
         gpu_utils.array, cp.array = orig_array, orig_cp
         gpu_utils.gpu_mode = False
-    assert len(got["nf"]) == 11  # ELBO before training + 10 iterations
+    # iter=10 runs 9 update rounds: mofapy2 loops over range(1, maxiter), and its stats have
+    # maxiter + 1 slots (slot 0 = before training, the last one stays NaN)
+    rounds = 10 - 1
+    assert np.isfinite(got["nf"]).sum() == rounds + 1
+    # W, Z and Tau each ask for every view's data once per round ...
+    assert count["requests"] == 3 * rounds * len(views)
+    # ... and it is uploaded once per view for the whole fit
     assert count["uploads"] == len(views)
-    assert count["requests"] > 2 * 10 * len(views)  # asked for in several updates per iteration
