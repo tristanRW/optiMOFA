@@ -70,7 +70,8 @@ noise, K close to N, pure noise, heavy tails with outliers, correlated and unsca
 sample-dependent noise, two groups, missing values, N >> D) with `fast_updates=False` and
 `True`, and require identical iterations and factor drops and agreement to 1e-9 in E[W],
 E[Z], E[tau], the ELBO and the variance explained. They also check float32, and, if CuPy and a
-GPU are present, GPU mode and that the data are uploaded once.
+GPU are present, GPU mode (float64 and float32), that the data are uploaded once, and that
+two GPU fits with the same seed are bit-identical.
 
 ## License
 

@@ -236,6 +236,33 @@ def test_fast_gpu_equals_stock_cpu(name):
 
 
 @pytest.mark.skipif(not _has_gpu(), reason="needs cupy and a CUDA device")
+@pytest.mark.parametrize("name", ["baseline", "missing"])
+def test_fast_gpu_equals_stock_float32(name):
+    from mofapy2.core import gpu_utils
+
+    views, groups, k = make(name)
+    ref = fit(views, k, groups, fast=False, f32=True)
+    got = fit(views, k, groups, fast=True, gpu=True, f32=True)
+    gpu_utils.gpu_mode = False
+    assert_equivalent(got, ref, tol=1e-3)
+
+
+@pytest.mark.skipif(not _has_gpu(), reason="needs cupy and a CUDA device")
+def test_gpu_fit_is_reproducible():
+    """Same data, seed, GPU and CUDA libraries: bit-identical results."""
+    from mofapy2.core import gpu_utils
+
+    views, groups, k = make("hetero_features")
+    a = fit(views, k, groups, fast=True, gpu=True, f32=True)
+    b = fit(views, k, groups, fast=True, gpu=True, f32=True)
+    gpu_utils.gpu_mode = False
+    np.testing.assert_array_equal(a["nf"], b["nf"])
+    np.testing.assert_array_equal(a["Z"], b["Z"])
+    for x, y in zip(a["W"] + a["tau"], b["W"] + b["tau"]):
+        np.testing.assert_array_equal(x, y)
+
+
+@pytest.mark.skipif(not _has_gpu(), reason="needs cupy and a CUDA device")
 def test_data_stays_resident_on_gpu():
     """Each view's data matrix is uploaded once per fit, also by the stock code paths
     (which ask for it in every W, Z and Tau update; stock mofapy2 re-uploads it each time)."""
